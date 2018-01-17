@@ -48,10 +48,11 @@ function onReady() {
         Janus.debug(JSON.stringify(stream));
 
         if($('#remotevideo').length === 0) {
-            $('#imageContainer').append('<video class="rounded centered hide" id="remotevideo" width=320 height=240 autoplay/>');
+            $('#imageContainer').append('<video class="rounded centered" id="remotevideo" width=320 height=240 autoplay/>');
         }
 
         Janus.attachMediaStream($('#remotevideo').get(0), stream);
+        
     }
 
     /// XXX: Is responding to every message necessary?
@@ -110,5 +111,6 @@ function onReady() {
 $(document).ready(function() {
 	// Initialize the library (all console debuggers enabled)
     Janus.init({debug: "all", callback: onReady});
+    //meterInit();
 });
 

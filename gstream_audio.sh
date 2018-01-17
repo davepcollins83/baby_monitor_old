@@ -18,6 +18,11 @@ gst-launch-1.0 -v \
     alsasrc device=plughw:1,0 \
         ! audioresample \
         ! audio/x-raw,channels=1,rate=16000 \
+        ! webrtcdsp echo-cancel="false" noise-suppression-level="very-high"\
+		! level message="true"\
         ! opusenc bitrate=20000 \
         ! rtpopuspay \
         ! udpsink host=127.0.0.1 port=5002
+
+#     ! ladspa-caps-so-noisegate open=-60.0 close=-80 attack=0 \
+#        ! webrtcechoprobe \

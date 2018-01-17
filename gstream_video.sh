@@ -21,7 +21,7 @@ fi
 
 gst-launch-1.0 -v \
     v4l2src device=${videosrc} \
-        ! video/x-raw,framerate=10/1, width=640, height=480 \
+        ! video/x-raw,framerate=10/1, width=840, height=480 \
         ! jpegenc \
         ! tee name=t \
         ! queue \

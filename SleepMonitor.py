@@ -6,6 +6,12 @@ from twisted.web import server, resource
 from twisted.web.static import File
 from zope.interface import implementer
 
+import jinja2
+
+import pyglet
+
+from random import *
+
 import io
 import re
 from datetime import datetime, timedelta
@@ -13,6 +19,7 @@ import glob
 import os
 import json
 import subprocess
+import time
 
 import Image
 import ImageOps
@@ -28,6 +35,39 @@ from LoggingUtils import *
 
 from Config import Config
 from Constants import *
+
+template_dir = '{}/web/'.format(os.path.dirname(os.path.realpath(__file__)))
+
+player = pyglet.media.Player()
+
+os.system('modprobe w1-gpio')
+os.system('modprobe w1-therm')
+ 
+base_dir = '/sys/bus/w1/devices/'
+device_folder = glob.glob(base_dir + '28*')[0]
+device_file = device_folder + '/w1_slave'
+
+def read_temp_raw():
+    f = open(device_file, 'r')
+    lines = f.readlines()
+    f.close()
+    return lines
+ 
+def read_temp():
+    lines = read_temp_raw()
+    while lines[0].strip()[-3:] != 'YES':
+        time.sleep(0.2)
+        lines = read_temp_raw()
+    equals_pos = lines[1].find('t=')
+    if equals_pos != -1:
+        temp_string = lines[1][equals_pos+2:]
+        temp_c = float(temp_string) / 1000.0
+        # temp_f = temp_c * 9.0 / 5.0 + 32.0
+        return temp_c
+
+def render(template_file, context):
+    env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir))
+    return env.get_template(template_file).render(context).encode('utf-8')
 
 def async_sleep(seconds):
      d = defer.Deferred()
@@ -295,8 +335,10 @@ def startAudio():
     log('Started Janus')
 
     def startGstreamerAudio():
-        spawnNonDaemonProcess(reactor, TerminalEchoProcessProtocol(), '/bin/sh', 
-                              ['sh', 'gstream_audio.sh'])
+    	
+    	spawnNonDaemonProcess(reactor, TerminalEchoProcessProtocol(), '/usr/bin/python', ['python', 'gstream_audio.py'])
+        #spawnNonDaemonProcess(reactor, TerminalEchoProcessProtocol(), '/bin/sh', ['sh', 'gstream_audio_mod.sh'])
+    	
         log('Started gstreamer audio')
 
     reactor.callLater(2, startGstreamerAudio)
@@ -310,6 +352,42 @@ def startAudioIfAvailable():
         startAudio()
     else:
         log('Audio not detected. Starting in silent mode')
+
+class GetChart(resource.Resource):
+	def __init__(self, app):
+		self.app = app
+		
+	def render_GET(self, request):
+		#request.setHeader("content-type", 'application/json')
+		legend = 'Monthly Data'
+		labels = ["January", "February", "March", "April", "May", "June", "July", "August"]
+		
+		values = [10, 9, 8, 7, 6, 4, 7, 8]
+		data = {'legend': legend, 'labels': labels, 'values': values}
+		return render('vartest.html', data)
+
+class GetTemp(resource.Resource):
+	def __init__(self, app):
+		self.app = app
+		
+	def render_GET(self, request):
+		request.setHeader("content-type", "text/html")
+		temp = read_temp()
+	
+		return bytes(temp)
+		
+class PlayMusic(resource.Resource):
+	def __init__(self, app):
+		self.app = app
+		
+	def render_GET(self, request):
+		
+		global player
+		
+		player.queue(pyglet.media.load('media/bell.wav'))
+		player.play()
+		
+		return	
 
 class SleepMonitorApp:
     def startGstreamerVideo(self):
@@ -361,6 +439,9 @@ class SleepMonitorApp:
         root.putChild('ping', PingResource())
         root.putChild('getConfig', GetConfigResource(self))
         root.putChild('updateConfig', UpdateConfigResource(self))
+        root.putChild('getChart', GetChart(self))
+        root.putChild('getTemp', GetTemp(self))
+        root.putChild('playMusic', PlayMusic(self))
 
         site = server.Site(root)
         PORT = 80
@@ -387,5 +468,6 @@ if __name__ == "__main__":
     log('Starting main method of sleep monitor')
     try:
         app = SleepMonitorApp()
+        pyglet.app.run()
     except:
         logging.exception("main() threw exception")

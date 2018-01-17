@@ -1,5 +1,5 @@
 body {
-    background-color: black;
+    background-color: #bee3ff;
     margin: 0px;
 }
 
@@ -10,6 +10,19 @@ body {
     top:0;bottom:0; /* vertical center */
     left:0;right:0; /* horizontal center */
     overflow-y: hidden;
+}
+
+#muteButtonDiv
+{
+	position: absolute;
+	top: 50px;
+	left: 100px;
+	z-index: 5;
+}
+
+#muteButton{
+	width: 50px;
+	height: 50px;
 }
 
 #status {
@@ -59,4 +72,20 @@ body {
     height: 100%;
     width: 100%;
     object-fit: contain;
+}
+
+#vuMeterDiv{
+	margin:auto;
+	position: absolute;
+	top:50%;bottom:50%; /* vertical center */
+	right: 50px;
+}
+
+#vuMeter{
+	width: 250px;
+	height: 50px;
+	-webkit-transform: rotate(-90deg);
+	-moz-transform: rotate(-90deg);
+	-o-transform: rotate(-90deg);
+	transform: rotate(-90deg);
 }
